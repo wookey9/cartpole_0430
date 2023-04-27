@@ -90,17 +90,24 @@ class ReplayBuffer:
         self.next_states.rotate(bufStartIdx)
         self.dones.rotate(bufStartIdx)
 
-        states = deque(maxlen=batch_size)
-        actions = deque(maxlen=batch_size)
-        rewards = deque(maxlen=batch_size)
-        next_states = deque(maxlen=batch_size)
-        dones = deque(maxlen=batch_size)
+        dq_states = deque(maxlen=batch_size)
+        dq_actions = deque(maxlen=batch_size)
+        dq_rewards = deque(maxlen=batch_size)
+        dq_next_states = deque(maxlen=batch_size)
+        dq_dones = deque(maxlen=batch_size)
         for i in range(batch_size):
-            states.append(self.states.popleft())
-            actions.append(self.actions.popleft())
-            rewards.append(self.rewards.popleft())
-            next_states.append(self.next_states.popleft())
-            dones.append(self.dones.popleft())
+            dq_states.append(self.states.popleft())
+            dq_actions.append(self.actions.popleft())
+            dq_rewards.append(self.rewards.popleft())
+            dq_next_states.append(self.next_states.popleft())
+            dq_dones.append(self.dones.popleft())
+
+        states = torch.from_numpy(np.array(dq_states))
+        actions = torch.from_numpy(np.array(dq_actions))
+        rewards = torch.from_numpy(np.array(dq_rewards))
+        next_states = torch.from_numpy(np.array(dq_next_states))
+        dones = torch.from_numpy(np.array(dq_dones))
+
         return states, actions, rewards, next_states, dones
 
 class DQN(nn.Module):
@@ -115,13 +122,12 @@ class DQN(nn.Module):
         hidden_size = 256
         self.example_layer = nn.Linear(input_size, output_size)
         self.example_activation = nn.Tanh()
-       
 
     def forward(self, state):
         '''
         Get Q values for each action given state
         '''
-        q_values = self.example_layer(state)
+        q_values = self.example_activation(self.example_layer(state))
         return q_values
 
 
@@ -159,26 +165,37 @@ class Agent:
         returns:
             discrete action integer
         '''
+        if np.random.rand() > self.epsilon:
+            return int(torch.argmax(self.network(torch.from_numpy(state))))
         return np.random.randint(self.action_size)
 
 
     def train_network(self, states, actions, rewards, next_states, dones):
-        y = rewards.popleft()
-        accGamma = self.gamma
-        for ns in range(self.n_step):
-            if ns == self.n_step - 1:
-                y += accGamma * np.np.max(self.target_network.forward(next_states.popleft()))
+        self.network.train()
+        running_cost = 0
+        for j in range(self.batch_size):
+            q_target = rewards[j]
+            if dones[j]:
+                pass
             else:
-                y += accGamma * rewards.popleft()
-            accGamma *= self.gamma
+                accGamma = self.gamma
+                for n in range(self.n_step):
+                    if(dones[j + n] | (j + n >= self.batch_size - 1) | n == self.n_step - 1):
+                        q_target += accGamma * torch.max(self.target_network(states[j + n + 1]))
+                        break
+                    else:
+                        q_target += accGamma * rewards[j + n]
+                    accGamma *= self.gamma
 
+            q = self.network(states[j])[actions[j]]
 
+            lossfn = nn.MSELoss()
+            loss = lossfn(q, q_target)
+            self.optimizer.zero_grad()
+            loss.backward()
+            self.optimizer.step()
 
-
-
-        loss = (y - self.network.forward(states.popleft())[actions.popleft()])^2
-
-
+            running_cost += loss.item()
 
     def update_target_network(self):
         '''
