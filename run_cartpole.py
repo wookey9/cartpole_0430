@@ -13,7 +13,7 @@ env = gym.make('CartPole-v1')
 action_size = env.action_space.n
 print("Action Space", env.action_space.n)
 print("State Space", env.observation_space.shape[0])
-
+print(torch.cuda.is_available())
 
 def visualize_env(agent=None):
     state = env.reset()
