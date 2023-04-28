@@ -62,7 +62,7 @@ class ReplayBuffer:
                 self.actions.append(self.n_actions[0])
                 reward_sum = 0
                 for i, reward in enumerate(self.n_rewards):
-                    reward_sum += self.gamma ** i * reward
+                    reward_sum += (self.gamma ** i) * reward
                 self.rewards.append(reward_sum)
                 self.next_states.append(next_state)
                 self.dones.append(self.n_dones[-1])
@@ -147,11 +147,11 @@ class Agent:
 
         self.curr_step = 0
 
-        self.learning_rate = 0.0001
+        self.learning_rate = 0.01
         self.buffer_size = 50000
         self.batch_size = 64
         self.epsilon = 0.10
-        self.gamma = 0.995
+        self.gamma = 0.99
         self.n_step = 1
         self.target_update_freq = 512
         self.gradient_update_freq = 1
@@ -191,7 +191,7 @@ class Agent:
         cur = self.network.forward(states)
         q = cur.gather(1, actions.unsqueeze(1)).squeeze(1)
 
-        loss = F.mse_loss(q, target_q)
+        loss = F.smooth_l1_loss(q, target_q)
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
@@ -212,5 +212,9 @@ class Agent:
             self.train_network(*self.replay_buffer.sample(self.batch_size, device=self.device))
             if((self.curr_step % self.target_update_freq) == 0):
                 self.update_target_network()
+            self.update_eps()
 
+    def update_eps(self):
+        if(self.epsilon > 0.01):
+            self.epsilon -= 0.00002
 
