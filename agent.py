@@ -46,6 +46,8 @@ class ReplayBuffer:
         self.beta = 0.4
         self.e = 0.01
 
+        self.prev_delta = 0
+
 
     def __len__(self) -> int:
         return len(self.states)
@@ -56,7 +58,13 @@ class ReplayBuffer:
         add sample to the buffer
         '''
 
-        reward /= (abs(state[0] - 0.5) * 10 + 1)
+
+
+        delta = abs(state[0] - 0.5)
+        pi = delta * 2 + abs(delta - self.prev_delta)
+        self.prev_delta = delta
+
+        reward -= pi
 
         if self.n_step > 1:
             self.n_states.append(state)

@@ -63,11 +63,12 @@ def model_free_RL():
         action = agent.select_action(state)
         next_state, reward, done, _ = env.step(action)
         agent.step(state, action, reward, next_state, done)
-        xs.append(state[0])
+
         episode_rewards += reward
         state = next_state
 
         if done:
+            xs.append(state[0])
             state = env.reset()
             all_episode_rewards.append(episode_rewards)
             episode_end_steps.append(curr_step)
