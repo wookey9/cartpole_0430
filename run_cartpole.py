@@ -34,6 +34,7 @@ def visualize_env(agent=None):
             print("total reward:", total_rewards)
             total_rewards = 0
             state = env.reset()
+
         state = next_state
 
 
@@ -56,13 +57,13 @@ def model_free_RL():
     all_episode_rewards = []
     all_20_epi_rewards = []
     episode_end_steps = []
-    
+    xs = []
     state = env.reset()
     while curr_step < TRAIN_STEPS:
         action = agent.select_action(state)
         next_state, reward, done, _ = env.step(action)
         agent.step(state, action, reward, next_state, done)
-
+        xs.append(state[0])
         episode_rewards += reward
         state = next_state
 
@@ -77,8 +78,9 @@ def model_free_RL():
         if curr_step % 1000 == 0:
             last_20_avg_reward = np.mean(all_episode_rewards[-20:])
             all_20_epi_rewards.append(last_20_avg_reward)
-            print(f"\rStep {curr_step}/{TRAIN_STEPS} || Cur average reward {last_20_avg_reward} "
+            print(f"\rStep {curr_step}/{TRAIN_STEPS} || Eps {agent.get_epsilon()} || Cur pos {np.average(xs)} || Cur average reward {last_20_avg_reward} "
                     f"|| Max average reward {max(all_20_epi_rewards)} || Max reward {max(all_episode_rewards)}", end="")
+            xs.clear()
             if np.mean(all_episode_rewards[-20:]) > 475:
                 print('\nEarly Stop')
                 break
