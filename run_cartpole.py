@@ -19,7 +19,7 @@ def visualize_env(agent=None):
     state = env.reset()
     total_rewards = 0
 
-    for step in range(200):
+    for step in range(1000):
         env.render(mode='human')
         time.sleep(0.016)
         if agent is None:
