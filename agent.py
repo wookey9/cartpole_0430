@@ -46,7 +46,7 @@ class ReplayBuffer:
         self.beta = 0.4
         self.e = 0.01
 
-        self.prev_delta = 0
+        self.target_pos = 0.6
 
 
     def __len__(self) -> int:
@@ -58,9 +58,7 @@ class ReplayBuffer:
         add sample to the buffer
         '''
 
-
-
-        if(state[0] > 0.5):
+        if((state[0] > (self.target_pos - 0.1)) and (state[0] < (self.target_pos + 0.1))):
             reward += 1
         else:
             reward -= 1
@@ -149,6 +147,8 @@ class ReplayBuffer:
         for i, t in zip(idx, tds):
             self.priorities[i] = (t + self.e) ** self.alpha
 
+    def set_targetpos(self, target):
+        self.target_pos = target
 
 class DQN(nn.Module):
     '''
@@ -182,12 +182,12 @@ class Agent:
 
         self.curr_step = 0
 
-        self.learning_rate = 0.0001
+        self.learning_rate = 0.001
         self.buffer_size = 50000
         self.batch_size = 64
         self.epsilon = 1.0
-        self.epsilon_decay = 10000
-        self.gamma = 0.95
+        self.epsilon_decay = 5000
+        self.gamma = 0.99
         self.n_step = 4
         self.target_update_freq = 512
         self.gradient_update_freq = 1
@@ -256,3 +256,6 @@ class Agent:
     def get_epsilon(self):
         #return 0.1
         return (0.01 + (self.epsilon - 0.01) * math.exp(-1. * self.curr_step / self.epsilon_decay))
+
+    def set_target_pos(self, target):
+        self.replay_buffer.set_targetpos(target)

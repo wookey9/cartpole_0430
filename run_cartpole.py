@@ -13,13 +13,13 @@ env = gym.make('CartPole-v1')
 action_size = env.action_space.n
 print("Action Space", env.action_space.n)
 print("State Space", env.observation_space.shape[0])
-print(torch.cuda.is_available())
+
 
 def visualize_env(agent=None):
     state = env.reset()
     total_rewards = 0
 
-    for step in range(1000):
+    for step in range(200):
         env.render(mode='human')
         time.sleep(0.016)
         if agent is None:
@@ -34,19 +34,18 @@ def visualize_env(agent=None):
             print("total reward:", total_rewards)
             total_rewards = 0
             state = env.reset()
-
         state = next_state
 
 
 def plot_with_exponential_averaging(x, y, label, alpha):
-    y_ema = [y[0],] 
+    y_ema = [y[0], ]
     for y_i in y[1:]:
         y_ema.append(y_ema[-1] * alpha + y_i * (1 - alpha))
-    
+
     p = plt.plot(x, y_ema, label=label)
-    
+
     plt.plot(x, y, color=p[0].get_color(), alpha=0.2)
-    
+
     plt.show()
 
 
@@ -57,7 +56,7 @@ def model_free_RL():
     all_episode_rewards = []
     all_20_epi_rewards = []
     episode_end_steps = []
-    xs = []
+
     state = env.reset()
     while curr_step < TRAIN_STEPS:
         action = agent.select_action(state)
@@ -68,7 +67,6 @@ def model_free_RL():
         state = next_state
 
         if done:
-            xs.append(state[0])
             state = env.reset()
             all_episode_rewards.append(episode_rewards)
             episode_end_steps.append(curr_step)
@@ -79,13 +77,12 @@ def model_free_RL():
         if curr_step % 1000 == 0:
             last_20_avg_reward = np.mean(all_episode_rewards[-20:])
             all_20_epi_rewards.append(last_20_avg_reward)
-            print(f"\rStep {curr_step}/{TRAIN_STEPS} || Eps {agent.get_epsilon()} || Cur pos {np.average(xs)} || Cur average reward {last_20_avg_reward} "
-                    f"|| Max average reward {max(all_20_epi_rewards)} || Max reward {max(all_episode_rewards)}", end="")
-            xs.clear()
+            print(f"\rStep {curr_step}/{TRAIN_STEPS} || Cur average reward {last_20_avg_reward} "
+                  f"|| Max average reward {max(all_20_epi_rewards)} || Max reward {max(all_episode_rewards)}", end="")
             if np.mean(all_episode_rewards[-20:]) > 475:
                 print('\nEarly Stop')
                 break
-    
+
     plot_with_exponential_averaging(episode_end_steps, all_episode_rewards, label='DQN', alpha=0.9)
 
     print('\n')
@@ -115,7 +112,6 @@ def testing_after_learning(agent):
 
     print("Test Reward Result: " + str(sum(total_test_rewards) / n_tests))
     print("Test Average x Result: " + str(np.average(xs)))
-
 
 
 while True:
