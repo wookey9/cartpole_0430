@@ -60,11 +60,10 @@ class ReplayBuffer:
 
 
 
-        delta = abs(state[0] - 0.5)
-        pi = delta * 2 + abs(delta - self.prev_delta)
-        self.prev_delta = delta
-
-        reward -= pi
+        if(state[0] > 0.5):
+            reward += 1
+        else:
+            reward -= 1
 
         if self.n_step > 1:
             self.n_states.append(state)
