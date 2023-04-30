@@ -148,7 +148,7 @@ class ReplayBuffer:
 
     def update_priorities(self, idx, tds):
         for i, t in zip(idx, tds):
-            self.priorities[i] = (t + self.e) ** self.alpha
+            self.priorities[i] = (t + self.e)
 
 
 class DQN(nn.Module):
@@ -192,6 +192,7 @@ class Agent:
         self.batch_size = 64
         self.epsilon = 1.0
         self.epsilon_decay = 10000
+        self.epsilon_min = 0.01
         self.gamma = 0.99
         self.n_step = 4
         self.target_update_freq = 512
@@ -228,9 +229,9 @@ class Agent:
         q = cur.gather(1, actions.unsqueeze(1)).squeeze(1)
 
         with torch.no_grad():
-            double_tq = self.network(next_states).argmax(dim=1)
+            max_act = self.network(next_states).argmax(dim=1)
             target = self.target_network(next_states)
-            target_q = target.gather(1, double_tq.unsqueeze(1)).squeeze(1)
+            target_q = target.gather(1, max_act.unsqueeze(1)).squeeze(1)
             target_q = rewards + (self.gamma ** self.n_step) * target_q * dones.logical_not()
 
         is_weights = torch.tensor(weights, dtype=torch.float).to(self.device)
@@ -260,4 +261,4 @@ class Agent:
 
     def get_epsilon(self):
         #return 0.1
-        return (0.01 + (self.epsilon - 0.01) * math.exp(-1. * self.curr_step / self.epsilon_decay))
+        return (self.epsilon_min + (self.epsilon - self.epsilon_min) * math.exp(-1. * self.curr_step / self.epsilon_decay))
