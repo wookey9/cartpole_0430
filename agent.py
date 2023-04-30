@@ -162,8 +162,7 @@ class DQN(nn.Module):
         hidden_size = 128
         self.layer1 = nn.Linear(input_size, hidden_size)
         self.layer2 = nn.Linear(hidden_size, hidden_size)
-        #self.layer3 = nn.Linear(hidden_size, hidden_size)
-        self.layer4 = nn.Linear(hidden_size, output_size)
+        self.layer3 = nn.Linear(hidden_size, output_size)
 
     def forward(self, state):
         '''
@@ -171,8 +170,7 @@ class DQN(nn.Module):
         '''
         q_values = nn.functional.relu(self.layer1(state))
         q_values = nn.functional.relu(self.layer2(q_values))
-        #q_values = F.relu(self.layer3(q_values))
-        q_values = self.layer4(q_values)
+        q_values = self.layer3(q_values)
 
         return q_values
 
@@ -216,7 +214,6 @@ class Agent:
             return np.random.randint(self.action_size)
 
         with torch.no_grad():
-            #print(self.network(torch.tensor(state, dtype=torch.float).to(self.device)),  int(torch.argmax(self.network(torch.tensor(state, dtype=torch.float).to(self.device)))) , '-', self.get_epsilon())
             return self.network(torch.tensor(state, dtype=torch.float).to(self.device)).argmax().item()
 
 
